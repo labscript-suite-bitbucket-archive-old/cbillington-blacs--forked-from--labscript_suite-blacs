@@ -28,6 +28,108 @@ logger = logging.getLogger('BLACS.plugins')
 
 DEFAULT_PRIORITY = 10
 
+
+class BasePlugin(object):
+    """Base class for plugins, implementing default methods"""
+    def __init__(self, initial_settings):
+        self.menu = None
+        self.notifications = None
+        self.initial_settings = initial_settings
+        self.BLACS = None
+
+    def get_menu_class(self):
+        """Return a subclass of BaseMenu, specifying the details of a menu for this
+        plugin that should be added to the menu bar"""
+        return None
+
+    def get_notification_classes(self):
+        """Return a list of subclasses of BaseNotification for types of notification
+        that may or may not be visible at any time."""
+        return []
+
+    def get_settings_classes(self):
+        """TODO docstring"""
+        return []
+
+    def get_callbacks(self):
+        """This method should return a dictionary mapping callback names to callables or
+        Callback objects."""
+        return {}
+
+    def set_menu_instance(self, menu):
+        """Called by BLACS to set the menu instance, an instance of the class returned
+        by get_menu_class. Subclasses should not need to override this method."""
+        self.menu = menu
+
+    def set_notification_instances(self, notifications):
+        """Called by BLACS to set the notification instances, which are instances of the
+        classes returned by get_notification_classes. Subclasses should not need to
+        override this method. notifications is a dictionary of instances, keyed by
+        class."""
+        self.notifications = notifications
+
+    def plugin_setup_complete(self, BLACS):
+        """Called by BLACS when it has finished instantiating settings, menus,
+        notifications etc. Subclasses should override this method to restore save data
+        (as passed into __init__ as initial_settings) to the places in the GUI it
+        belongs, and to set up plugin-specific functionality such as starting threads or
+        adding widgets to the BLACS interface."""
+        self.BLACS = BLACS
+
+    def get_save_data(self):
+        """Return a dictionary of data that should be saved from one run of BLACS to the
+        next. At startup, data saved this way will be passed as initial_settings to
+        __init__()"""
+        return {}
+
+    def close(self):
+        """Perform any required shutdown before BLACS closes."""
+        pass
+
+
+class BaseSettings(object):
+    """Base class for settings objects, implementing default methods. Subclasses of
+    BasePlugin should return a list of subclasses of BaseSettings from their
+    get_settings_classes() method."""
+    pass
+
+
+class BaseMenu(object):
+    """Base class for menus, implementing default methods. Subclasses of BasePlugin
+    should return a list of subclasses of BaseMenu objects from their get_menu_class()
+    method."""
+    def __init__(self,BLACS):
+        self.BLACS = BLACS
+        # close_notification_func is a method that will be called when the user
+        # dismisses a notification. Subclasses may set it here, but existing plugins
+        # tend to set it at runtime from the plugin object, possibly pointing to a
+        # callable that is not a method of the menu object. It should be None if there
+        # are no notification classes returned by the plugin's
+        # get_notification_classes() method.
+        self.close_notification_func = None
+
+    def get_menu_items(self):
+        """Return a dictionary {'name': <menu_name>, 'menu_items' <items>}, where items
+        is a list of dictionaries for items that should be in the menu, each of the form
+        {'name': <item name>, 'action': <callable>, 'icon' <icon_name>} describing the
+        appearance of a menu item and what callable should be run when it is
+        activated"""
+        return {
+            'name': 'Example plugin menu',
+            'menu_items': [
+                {
+                    'name': 'example item',
+                    'action': lambda: None,
+                    'icon': ':/qtutils/fugue/document--pencil',
+                }
+            ],
+        }
+
+
+class BaseNotification(object):
+    pass
+
+
 class Callback(object):
     """Class wrapping a callable. At present only differs from a regular
     function in that it has a "priority" attribute - lower numbers means
