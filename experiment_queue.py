@@ -577,7 +577,15 @@ class QueueManager(object):
                 inmain(self._ui.queue_abort_button.clicked.connect,abort_function)
                 inmain(self._ui.queue_abort_button.setEnabled,True)
                                 
-                
+                ##########################################################################################################################################
+                #                                                        Plugin callbacks                                                                #
+                ########################################################################################################################################## 
+                for callback in plugins.get_callbacks('pre_transition_to_buffered'):
+                    try:
+                        callback(path)
+                    except Exception:
+                        logger.exception("Plugin callback raised an exception")
+
                 with h5py.File(path, 'r') as hdf5_file:
                     devices_in_use = {}
                     start_order = {}
